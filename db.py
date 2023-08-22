@@ -9,7 +9,7 @@ class RedisDB:
         return self.redis_client.hgetall(key)
 
     def save_event(self, name, key, value):
-        self.redis_client.hset(name, key, value)
+        return self.redis_client.hset(name, key, value)
 
     def get_keys(self):
         return self.redis_client.keys()
