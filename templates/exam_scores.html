@@ -1,0 +1,13 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Scores by Exam</title>
+</head>
+<body>
+    <h1>Exam results for: {{ exam_id }}</h1>
+    <h3>Average score: {{ avg_score }}</h3>
+    {% for student, score in test_results.items() %}
+        <div><b>{{ student.decode() }}</b>: {{ score.decode() }}</div>
+    {% endfor %}
+</body>
+</html>
