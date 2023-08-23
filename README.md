@@ -38,3 +38,23 @@ That said, we'd like you to cut some corners so we can focus on certain aspects 
 The spec is intentionally a little underspecified. We're looking for a functional REST API that meets the criteria above, but there are no "gotchas," and there is no single "right" solution. Please use your best judgment and be prepared to explain your decisions in the on-site review.
 
 That's it. Commit your solution to the provided GitHub repository (this one) and submit the solution using the Greenhouse link we emailed you. When you come in, we'll pair with you and walk through your solution and extend it in an interesting way.
+
+## How to run
+
+1. Install requirements and start the redis server:
+```commandline
+pip install -r requirements.txt
+redis-server
+```
+
+2. In one CLI window run:
+```commandline
+celery -A app.celery worker --loglevel=info
+```
+
+2. In another CLI window run:
+```commandline
+flask run --host 0.0.0.0 --port 8000
+```
+
+

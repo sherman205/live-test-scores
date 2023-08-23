@@ -3,18 +3,29 @@ Flask routes for live test score retrieval
 """
 import json
 import sseclient
-from flask import Flask, Response, render_template
+import markdown
+from flask import Flask, render_template
+from celery import Celery
 from db import RedisDB
 
+
 app = Flask(__name__)
+
+# Configure Celery
+app.config['CELERY_BROKER_URL'] = 'redis://localhost:6379/0'
+app.config['result_backend'] = 'redis://localhost:6379/0'
+celery = Celery(app.name, broker=app.config['CELERY_BROKER_URL'])
+celery.conf.update(app.config)
+
 app.students_db = RedisDB(db=1)  # database for students
 app.exams_db = RedisDB(db=2)  # database for exams
-
 
 SCORES_SERVER_URL = "http://live-test-scores.herokuapp.com/scores"
 
 
-def connect_to_server():
+@celery.task
+def process_test_scores_data():
+    """Connects to SSE server to process test results and save to Redis db in memory."""
     client = sseclient.SSEClient(SCORES_SERVER_URL)
 
     for event in client:
@@ -22,13 +33,25 @@ def connect_to_server():
             row = json.loads(event.data)
             app.students_db.save_event(row.get('studentId'), row.get('exam'), row.get('score'))
             app.exams_db.save_event(row.get('exam'), row.get('studentId'), row.get('score'))
-            yield f"data: {row}\n\n"
+
+            # Output for celery queue
+            print(f"data: {row}\n\n")
+
+
+@app.before_first_request
+def connect_to_server():
+    """Before any requests made to this app, first call the celery task asynchronously."""
+    process_test_scores_data.apply_async()
 
 
 @app.route('/', methods=['GET'])
 def live_test_scores_home():
-    """Index route on app load."""
-    return Response(connect_to_server(), content_type='text/event-stream')
+    """Index route on app load, displays the README."""
+    with open('README.md', 'r') as readme_file:
+        readme_content = readme_file.read()
+        html_content = markdown.markdown(readme_content)
+
+    return render_template('welcome.html', content=html_content)
 
 
 @app.route('/students', methods=['GET'])
