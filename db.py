@@ -13,3 +13,6 @@ class RedisDB:
 
     def get_keys(self):
         return self.redis_client.keys()
+
+    def delete(self, key):
+        return self.redis_client.delete(key)
