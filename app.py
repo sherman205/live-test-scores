@@ -1,6 +1,7 @@
 """
 Flask routes for live test score retrieval
 """
+import os
 import json
 import sseclient
 import markdown
@@ -12,13 +13,14 @@ from db import RedisDB
 app = Flask(__name__)
 
 # Configure Celery
-app.config['CELERY_BROKER_URL'] = 'redis://localhost:6379/0'
-app.config['result_backend'] = 'redis://localhost:6379/0'
+host_name = os.environ.get("REDIS_HOST", "localhost")
+app.config['CELERY_BROKER_URL'] = f'redis://{host_name}:6379/0'
+app.config['result_backend'] = f'redis://{host_name}:6379/0'
 celery = Celery(app.name, broker=app.config['CELERY_BROKER_URL'])
 celery.conf.update(app.config)
 
-app.students_db = RedisDB(db=1)  # database for students
-app.exams_db = RedisDB(db=2)  # database for exams
+app.students_db = RedisDB(host=host_name, db=1)  # database for students
+app.exams_db = RedisDB(host=host_name, db=2)  # database for exams
 
 SCORES_SERVER_URL = "http://live-test-scores.herokuapp.com/scores"
 
@@ -38,11 +40,12 @@ def process_test_scores_data():
             print(f"data: {row}\n\n")
 
 
-@app.before_first_request
-def connect_to_server():
-    """Before any requests made to this app, first call the celery task asynchronously."""
+# Start processing data from SSE server on app start up
+with app.app_context():
     process_test_scores_data.apply_async()
 
+
+# =========== Routes ==============#
 
 @app.route('/', methods=['GET'])
 def live_test_scores_home():
@@ -88,6 +91,8 @@ def get_exam_results(exam_id):
     avg_score = average_score(test_results)
     return render_template('exam_scores.html', exam_id=exam_id,
                            test_results=test_results, avg_score=avg_score)
+
+# ============= Helpers =============== #
 
 
 def average_score(results: dict) -> float:
