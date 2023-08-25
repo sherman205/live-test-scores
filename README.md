@@ -51,3 +51,10 @@ Using port 8000 if just running flask app without docker:
 
 1. In the CLI, run `pip install -r requirements.txt` to install pytest
 2. Then run `pytest`
+
+## Future Considerations
+
+1. Add docker-compose-tests.yml for more robust automated testing
+2. Improve handling of requests, including specific error handling
+3. Improve UI functionality, add more informative templates and ways to interact with the data
+4. Add CI/CD pipeline
